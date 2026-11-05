@@ -732,7 +732,7 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
                     }
                 }));
         android.view.Window window = dialog.getWindow();
-        if (window != null) window.setType(android.view.WindowManager.LayoutParams.TYPE_STATUS_BAR_SUB_PANEL);
+        if (window != null) window.setType(android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
         dialog.show();
     }
 
