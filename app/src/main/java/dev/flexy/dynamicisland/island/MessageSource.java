@@ -2,7 +2,6 @@ package dev.flexy.dynamicisland.island;
 
 import android.app.Notification;
 import android.app.Person;
-import android.app.RemoteInput;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -83,7 +82,6 @@ public final class MessageSource {
         synchronized (ISLAND_KEYS) {
             ISLAND_KEYS.add(key);
         }
-        dev.flexy.dynamicisland.xposed.HideDuplicated.messageShown(key);
     }
 
     public static boolean isShownInIsland(String key) {
@@ -146,18 +144,6 @@ public final class MessageSource {
         }
         it.accent = n.color != 0 ? Colors.readableOnBlack(n.color) : defaultAccent(pkg);
         it.contentIntent = n.contentIntent;
-        if (n.actions != null) {
-            for (Notification.Action action : n.actions) {
-            RemoteInput[] inputs = action.getRemoteInputs();
-            if (action.actionIntent == null || action.title == null
-                || inputs == null || inputs.length == 0) continue;
-            IslandItem.Action reply = new IslandItem.Action(
-                action.title, AppInfo.icon(ctx, pkg), action.actionIntent, null, false);
-            reply.remoteInputs = inputs;
-            it.actions.add(reply);
-            break;
-            }
-        }
         return it;
     }
 

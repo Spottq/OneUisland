@@ -692,10 +692,6 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
     @Override
     public void onItemAction(IslandItem item, IslandItem.Action action) {
         try {
-            if (action.remoteInputs != null && action.remoteInputs.length > 0) {
-                showReplyDialog(action);
-                return;
-            }
             if (action.runnable != null) {
                 action.runnable.run();
             } else if (action.intent != null) {
@@ -704,36 +700,6 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         } catch (Throwable t) {
             XLog.e("action failed", t);
         }
-    }
-
-    private void showReplyDialog(IslandItem.Action action) {
-        final android.widget.EditText input = new android.widget.EditText(ctx);
-        input.setSingleLine(false);
-        input.setHint("Message");
-        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(ctx)
-                .setTitle(action.title)
-                .setView(input)
-                .setNegativeButton("Cancel", null)
-                .setPositiveButton("Send", null)
-                .create();
-        dialog.setOnShowListener(d -> dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
-                .setOnClickListener(v -> {
-                    String text = input.getText().toString().trim();
-                    if (text.isEmpty()) return;
-                    android.content.Intent fill = new android.content.Intent();
-                    android.os.Bundle results = new android.os.Bundle();
-                    results.putCharSequence(action.remoteInputs[0].getResultKey(), text);
-                    android.app.RemoteInput.addResultsToIntent(action.remoteInputs, fill, results);
-                    try {
-                        action.intent.send(ctx, 0, fill, null, null, null, balOptions().toBundle());
-                        dialog.dismiss();
-                    } catch (Throwable t) {
-                        XLog.e("reply failed", t);
-                    }
-                }));
-        android.view.Window window = dialog.getWindow();
-        if (window != null) window.setType(android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
-        dialog.show();
     }
 
     @Override
