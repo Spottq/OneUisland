@@ -33,6 +33,7 @@ jobs:
           ./gradlew :app:assembleRelease --stacktrace
           apk=$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*-release*.apk' -print -quit)
           test -n "$apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$apk"
           cp "$apk" app/build/outputs/apk/release/OneUisland-1.4.7.apk
 
       - name: Upload testing APK
