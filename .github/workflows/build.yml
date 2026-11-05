@@ -4,16 +4,12 @@ on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
   pull_request:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -47,28 +43,3 @@ jobs:
           name: OneUisland-1.4.7
           path: app/build/outputs/apk/release/OneUisland-1.4.7.apk
 
-      - name: Publish APK release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: app/build/outputs/apk/release/OneUisland-1.4.7.apk
-          generate_release_notes: true
-          body: |
-            ## What's new
-
-            - WhatsApp and Telegram message alerts in Dynamic Island.
-            - Shows the sender, chat name, message text, and sender image when available.
-            - WhatsApp and Telegram island alerts currently work only with Do Not Disturb enabled because of a duplicate-notification bug under investigation.
-            - Chrome download progress with a percentage ring.
-            - Chrome download completion alerts.
-            - Samsung Internet download support.
-            - Multiple simultaneous downloads without replacing the music island.
-            - Prevents a download from being shown as complete while another download is still active.
-            - Full-color Chrome, WhatsApp, Telegram, and Samsung Internet icons and images.
-            - Improved secondary notification placement next to the main island.
-            - Visual improvements for message and download cards.
-
-            ## Notes
-
-            - Restart System UI after installing or updating the module.
-            - This release is signed with the testing key and is intended for testing.
