@@ -99,7 +99,7 @@ final class DownloadSource {
         boolean wasPrimed = primed;
         primed = true;
         if (changed) onChanged.run();
-        return wasPrimed && done != null ? completed(done) : null;
+        return wasPrimed && done != null && active.isEmpty() ? completed(done) : null;
     }
 
     /** Adds one progress item per active download. Skips downloads the system already shows. */
@@ -113,7 +113,7 @@ final class DownloadSource {
             int pct = percent.getOrDefault(e.getKey(), INDETERMINATE);
 
             IslandItem it = new IslandItem("dl:" + sbn.getKey());
-            it.kind = IslandItem.Kind.LIVE;
+            it.kind = IslandItem.Kind.CHARGING;
             it.packageName = pkg;
             it.userId = sbn.getUserId();
             it.postTime = sbn.getPostTime();

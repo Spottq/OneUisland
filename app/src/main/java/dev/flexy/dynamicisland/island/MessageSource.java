@@ -83,6 +83,7 @@ public final class MessageSource {
         synchronized (ISLAND_KEYS) {
             ISLAND_KEYS.add(key);
         }
+        dev.flexy.dynamicisland.xposed.HideDuplicated.messageShown(key);
     }
 
     public static boolean isShownInIsland(String key) {

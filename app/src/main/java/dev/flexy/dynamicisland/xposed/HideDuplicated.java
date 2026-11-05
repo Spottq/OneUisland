@@ -185,6 +185,12 @@ public final class HideDuplicated {
         return false;
     }
 
+    public static void messageShown(String key) {
+        if (key == null) return;
+        HIDDEN.put(key, SystemClock.uptimeMillis());
+        MAIN.post(HideDuplicated::rebuild);
+    }
+
     private static String normalized(CharSequence text) {
         return text == null ? "" : text.toString().replace('\u00a0', ' ').trim().replaceAll("\\s+", " ");
     }

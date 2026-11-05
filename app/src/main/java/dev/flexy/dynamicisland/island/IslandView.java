@@ -1975,9 +1975,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
             }
             return;
         }
-        item.icon.setColorFilter(GRAYSCALE);
         drawDrawable(c, item.icon, true, 0, left, midY - size / 2f, size, alpha, size * 0.26f);
-        item.icon.setColorFilter(null);
     }
 
     private void drawLeading(Canvas c, IslandItem item, float left, float midY, float size, float alpha) {
