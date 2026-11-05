@@ -28,15 +28,20 @@ Get the ready-made APK from [Releases](../../releases).
 - A fast swipe up closes the cards faster and makes the island bounce harder.
 - Short alerts: Do Not Disturb, sound / vibrate / mute, low battery (20% and 10%, shown for 5 s) and headphone battery (AirPods via LibrePods, Galaxy Buds, Fast Pair) with a red Low Battery alert at 10%.
 - Live notifications in the shade are styled as dark glass island cards: light text, a thin rim and a solid background when blur is off. App layouts, expansion and actions are kept. Regular notifications and the lock screen keep the system look.
+- Messages: a new WhatsApp or Telegram message shows as a card for about 4.5 s (sender, chat name, text, app icon). Tap it to open the chat.
+- Chrome downloads: a progress ring while a file downloads, and a short "download complete" card when it finishes. The text comes from Chrome, so it follows your language. Samsung Internet is included.
+- Message and download alerts stay quiet when the screen is locked, Do Not Disturb is on, a call is running, or the app is already open in front.
 
 ## Settings
 
 Open the module settings from LSPosed:
 
 - Island length (in characters).
+- Show in fullscreen (videos, games and immersive apps; disabled by default).
 - Detailed second capsule.
 - Cards: frosted glass design, recent Spotify playlists.
 - Alert toggles: headphone battery (every unlock or only on connect), Do Not Disturb, sound mode, low battery.
+- Notifications: WhatsApp and Telegram messages, Chrome downloads (each can be turned off). WhatsApp and Telegram island alerts currently work only with Do Not Disturb enabled, due to a duplicate-notification bug under investigation.
 - Island position: center or left after the clock (grows only to the right, stops before the camera). Tablets and the inner screen of foldables also get "around the front camera". Foldables have separate settings for the inner and cover screens. The left island, and the centered island on tablets and the inner screen, can use a blurred background instead of black.
 
 ## Installation

@@ -12,11 +12,18 @@ public final class Settings {
     public static final int DEF_MAX_CHARS = NO_MAX_CHARS;
 
     public static final String PREVIEW_LENGTH = "preview_length";
+    public static final String SHOW_FULLSCREEN = "show_fullscreen";
+    public static final boolean DEF_SHOW_FULLSCREEN = false;
 
     public static final String ALERT_PODS = "alert_pods";
     public static final String PODS_EVERY_UNLOCK = "pods_every_unlock";
     public static final String ALERT_DND = "alert_dnd";
     public static final String ALERT_RINGER = "alert_ringer";
+
+    public static final String SHOW_MESSAGES = "show_messages";
+    public static final boolean DEF_SHOW_MESSAGES = true;
+    public static final String SHOW_DOWNLOADS = "show_downloads";
+    public static final boolean DEF_SHOW_DOWNLOADS = true;
 
     public static final String ALERT_BATTERY = "alert_battery";
     public static final boolean DEF_ALERT_BATTERY = true;

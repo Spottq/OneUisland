@@ -159,7 +159,7 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         media = new MediaSource(ctx, main, this::requestRefresh);
         cast = new CastSource(ctx);
         exit = new ExitAnimationBridge(cl);
-        alerts = new AlertSource(ctx, this::requestRefresh);
+        alerts = new AlertSource(ctx, oa, this::requestRefresh);
         torch = new FlashlightSource(ctx, main, this::requestRefresh);
         fader = new StatusBarIconFader(density);
     }
@@ -366,12 +366,22 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
             oa.collect(items, hidden, packages);
             media.collect(items, oa.foregroundPackage(), hidden, packages);
             cast.collect(items);
+            alerts.collectDownloads(items);
             AssistantApp.collectAll(items, ctx);
             if (torch.available()) items.removeIf(FlashlightSource::isSystemTorchItem);
             torch.collect(items, view.isExpanded());
             addSavedRecording(items);
         } catch (Throwable t) {
             XLog.e("collect failed", t);
+        }
+        if (items.isEmpty() && IslandSettings.showFullscreen()) {
+            IslandItem idle = new IslandItem("idle:fullscreen");
+            idle.kind = IslandItem.Kind.LIVE;
+            idle.idle = true;
+            idle.noExpand = true;
+            idle.accent = 0xFF8E8E93;
+            idle.postTime = Long.MAX_VALUE;
+            items.add(idle);
         }
 
         long now = SystemClock.uptimeMillis();
@@ -442,7 +452,13 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         if (IslandSettings.previewLength()) {
             view.setItems(Collections.singletonList(lengthPreview), IslandView.HINT_NONE, Collections.emptyList());
         } else if (alert != null) {
-            view.setItems(Collections.singletonList(alert), IslandView.HINT_NONE, Collections.emptyList());
+            boolean idleOnly = items.size() == 1 && items.get(0).idle;
+            if (items.isEmpty() || idleOnly) {
+                view.setItems(Collections.singletonList(alert), IslandView.HINT_NONE, Collections.emptyList());
+            } else {
+                items.add(1, alert);
+                view.setItems(items, hint, hiddenList);
+            }
             main.postDelayed(this::requestRefresh, Math.max(16, alerts.until() - now));
         } else {
             view.setItems(items, hint, hiddenList);
@@ -624,7 +640,7 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
     private void updateSuppression() {
         if (view == null) return;
         boolean keyguard = barState == 1 || barState == 2;
-        view.setStatusBarHidden(statusBarWindowState != 0);
+        view.setStatusBarHidden(statusBarWindowState != 0 && !IslandSettings.showFullscreen());
         boolean folding = SystemClock.uptimeMillis() - sleepFoldAt < SLEEP_FOLD_MS;
         view.setSuppressed(((keyguard || keyguardStuck || dozing) && !folding) || revealPending);
         onIslandFrame();

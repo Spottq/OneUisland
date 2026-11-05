@@ -12,6 +12,7 @@ import android.graphics.RadialGradient;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.Shader;
+import android.graphics.PathMeasure;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -1975,9 +1976,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
             }
             return;
         }
-        item.icon.setColorFilter(GRAYSCALE);
         drawDrawable(c, item.icon, true, 0, left, midY - size / 2f, size, alpha, size * 0.26f);
-        item.icon.setColorFilter(null);
     }
 
     private void drawLeading(Canvas c, IslandItem item, float left, float midY, float size, float alpha) {
@@ -2225,6 +2224,13 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
         float scoreW;
         String scoreA;
         String scoreB;
+        final Path idlePath = new Path();
+        final Path idleSegment = new Path();
+        final PathMeasure idlePathMeasure = new PathMeasure();
+        final int[] idleColors = {0xFFFF3B30, 0xFFFF9500, 0xFFFFCC00, 0xFF34C759,
+            0xFF00C7BE, 0xFF0A84FF, 0xFFAF52DE};
+        float idleGradientWidth = -1f;
+        float idleGradientHeight = -1f;
 
         CompactContent(IslandItem item) {
             super(item);
@@ -2327,8 +2333,49 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
                 }
                 return;
             }
+            if (item.idle) {
+                drawIdlePill(c, s, alpha);
+                postInvalidateDelayed(66L);
+                return;
+            }
             drawLeadingMono(c, item, s.left + padding, midY, lead, alpha);
             if (trailW > 0) drawTrailing(c, item, trailText, s.right - padding, midY, trailW, alpha);
+        }
+
+        private void drawIdlePill(Canvas c, RectF s, float alpha) {
+            float phase = (SystemClock.uptimeMillis() % 1800L) / 1800f;
+            if (idleGradientWidth != s.width() || idleGradientHeight != s.height()) {
+                tmpRect.set(s.left + dp(1.5f), s.top + dp(1.5f), s.right - dp(1.5f), s.bottom - dp(1.5f));
+                idlePath.reset();
+                idlePath.addRoundRect(tmpRect, s.height() / 2f, s.height() / 2f, Path.Direction.CW);
+                idlePathMeasure.setPath(idlePath, false);
+                idleGradientWidth = s.width();
+                idleGradientHeight = s.height();
+            }
+            strokePaint.setStyle(Paint.Style.STROKE);
+            strokePaint.setStrokeWidth(dp(1.5f));
+            strokePaint.setColor(Colors.withAlpha(item.accent, alpha * 0.22f));
+            c.drawPath(idlePath, strokePaint);
+            float length = idlePathMeasure.getLength();
+            float head = phase * length;
+            for (int i = 0; i < idleColors.length; i++) {
+                float start = head - (idleColors.length - 1 - i) * length * 0.035f;
+                float end = start + length * 0.04f;
+                while (start < 0f) {
+                    start += length;
+                    end += length;
+                }
+                idleSegment.reset();
+                if (end <= length) {
+                    idlePathMeasure.getSegment(start, end, idleSegment, true);
+                } else {
+                    idlePathMeasure.getSegment(start, length, idleSegment, true);
+                    idlePathMeasure.getSegment(0f, end - length, idleSegment, true);
+                }
+                strokePaint.setColor(Colors.withAlpha(idleColors[i], alpha * 0.95f));
+                c.drawPath(idleSegment, strokePaint);
+            }
+            strokePaint.setStyle(Paint.Style.FILL);
         }
 
         private void drawTeams(Canvas c, RectF s, float midY, float lead, float alpha) {
@@ -3043,6 +3090,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
         final String trail;
         final StaticLayout subtitle;
         final float rowH;
+        float actionsTop = -1;
         final float pillW = dp(76);
         final float pillH = dp(46);
 
@@ -3057,7 +3105,9 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
             subtitle = item.iconRight && item.subtitle != null ? layout(item.subtitle, bodyPaint, Math.round(textW), 2) : null;
             overline = item.overline == null ? null
                     : TextUtils.ellipsize(item.overline, bodyPaint, textW, TextUtils.TruncateAt.END).toString();
-            title = item.title == null ? null : layout(item.title, titlePaint, Math.round(textW), 2);
+                boolean message = item.key.startsWith("msg:");
+                title = item.title == null ? null
+                    : layout(item.title, message ? bodyPaint : titlePaint, Math.round(textW), message ? 4 : 2);
             trail = item.trailingText == null ? null : item.trailingText.toString();
             Paint.FontMetrics bf = bodyPaint.getFontMetrics();
             float overH = overline == null ? 0f : bf.descent - bf.ascent + dp(1);
@@ -3065,6 +3115,10 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
                     + (subtitle == null ? 0f : dp(2) + subtitle.getHeight());
             rowH = Math.max(item.iconRight ? pillH : lead, textH);
             h = pad * 2 + rowH;
+            if (!item.actions.isEmpty()) {
+                actionsTop = h + dp(14);
+                h = actionsTop + layoutTextButtons(actionsTop, pad) + pad;
+            }
             if (item.iconRight) {
                 Btn b = new Btn();
                 b.r.set(w - pad - pillW, pad + (rowH - pillH) / 2f, w - pad, pad + (rowH + pillH) / 2f);
@@ -3132,6 +3186,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
             } else {
                 Drawable d = item.cardImage != null ? item.cardImage : item.icon;
                 if (d != null) drawDrawable(c, d, item.iconIsImage, item.iconTint != 0 ? item.iconTint : item.accent, x + pad, midY - lead / 2f, lead, a0, lead * 0.22f);
+                if (actionsTop >= 0) drawButtons(c, x, y + actionsTop + dy, a0 * rowAlpha(el, 2));
             }
             float tx = x + pad + lead + dp(16);
             Paint.FontMetrics tf = titlePaint.getFontMetrics();

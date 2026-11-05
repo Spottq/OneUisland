@@ -14,7 +14,6 @@ import android.widget.FrameLayout;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-/** Runs in an isolated app_process, using Android's real drawables and views. No SystemUI hooks. */
 public final class ShadeLiveCardsProbe {
     private static int checks;
 

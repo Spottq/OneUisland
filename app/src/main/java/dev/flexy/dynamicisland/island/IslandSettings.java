@@ -25,6 +25,10 @@ final class IslandSettings {
         return values.getBoolean(Settings.PREVIEW_LENGTH, false);
     }
 
+    static boolean showFullscreen() {
+        return values.getBoolean(Settings.SHOW_FULLSCREEN, Settings.DEF_SHOW_FULLSCREEN);
+    }
+
     static boolean alertBattery() {
         return values.getBoolean(Settings.ALERT_BATTERY, Settings.DEF_ALERT_BATTERY);
     }
@@ -39,6 +43,14 @@ final class IslandSettings {
 
     static boolean alertDnd() {
         return values.getBoolean(Settings.ALERT_DND, Settings.DEF_ALERT_DND);
+    }
+
+    static boolean showMessages() {
+        return values.getBoolean(Settings.SHOW_MESSAGES, Settings.DEF_SHOW_MESSAGES);
+    }
+
+    static boolean showDownloads() {
+        return values.getBoolean(Settings.SHOW_DOWNLOADS, Settings.DEF_SHOW_DOWNLOADS);
     }
 
     static boolean alertRinger() {

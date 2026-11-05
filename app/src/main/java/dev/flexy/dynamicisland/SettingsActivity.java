@@ -70,6 +70,7 @@ public final class SettingsActivity extends Activity {
         LinearLayout island = group(root, "Island");
         slider(island, "Island length", Settings.MAX_CHARS, Settings.MIN_MAX_CHARS, Settings.NO_MAX_CHARS,
                 Settings.DEF_MAX_CHARS, v -> v >= Settings.NO_MAX_CHARS ? "No limit" : v + " chars", Settings.PREVIEW_LENGTH);
+        toggle(island, "Show in fullscreen", Settings.SHOW_FULLSCREEN, Settings.DEF_SHOW_FULLSCREEN);
         link(island, "Island position", this::positionSummary, () ->
                 startActivity(new Intent(this, SettingsActivity.class).putExtra(EXTRA_SCREEN, SCREEN_POSITION)));
         toggle(island, "Detailed second capsule", Settings.DETAILED_BUBBLE, Settings.DEF_DETAILED_BUBBLE);
@@ -87,6 +88,14 @@ public final class SettingsActivity extends Activity {
         toggle(alerts, "Do Not Disturb", Settings.ALERT_DND, Settings.DEF_ALERT_DND);
         toggle(alerts, "Sound / Vibrate / Mute", Settings.ALERT_RINGER, Settings.DEF_ALERT_RINGER);
         toggle(alerts, "Low battery (20% and 10%)", Settings.ALERT_BATTERY, Settings.DEF_ALERT_BATTERY);
+
+        gap(root);
+        LinearLayout apps = group(root, "Notifications");
+        toggle(apps, "WhatsApp and Telegram messages", Settings.SHOW_MESSAGES, Settings.DEF_SHOW_MESSAGES);
+        TextView messageNote = label("WhatsApp and Telegram island alerts only work with Do Not Disturb enabled while this bug is investigated.", 12, secondary, false);
+        messageNote.setPadding(0, 0, 0, dp(8));
+        apps.addView(messageNote);
+        toggle(apps, "Chrome downloads", Settings.SHOW_DOWNLOADS, Settings.DEF_SHOW_DOWNLOADS);
 
         Button reset = new Button(this);
         reset.setText("Reset to defaults");
