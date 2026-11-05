@@ -10,8 +10,8 @@ android {
         applicationId 'dev.flexy.dynamicisland'
         minSdk 35
         targetSdk 36
-        versionCode 146
-        versionName '1.4.6'
+        versionCode 147
+        versionName '1.4.7'
         testInstrumentationRunner 'dev.flexy.dynamicisland.tests.RegressionRunner'
     }
 

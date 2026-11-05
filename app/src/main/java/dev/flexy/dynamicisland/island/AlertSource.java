@@ -493,7 +493,7 @@ final class AlertSource {
         if (download ? !IslandSettings.showDownloads() : !IslandSettings.showMessages()) return false;
         KeyguardManager km = ctx.getSystemService(KeyguardManager.class);
         if (km != null && km.isKeyguardLocked()) return false;
-        if (dndOn() || oa.inCall()) return false;
+        if (oa.inCall()) return false;
         String foreground = oa.foregroundPackage();
         return foreground == null || !foreground.equals(it.packageName);
     }

@@ -443,7 +443,12 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         if (IslandSettings.previewLength()) {
             view.setItems(Collections.singletonList(lengthPreview), IslandView.HINT_NONE, Collections.emptyList());
         } else if (alert != null) {
-            view.setItems(Collections.singletonList(alert), IslandView.HINT_NONE, Collections.emptyList());
+            if (items.isEmpty()) {
+                view.setItems(Collections.singletonList(alert), IslandView.HINT_NONE, Collections.emptyList());
+            } else {
+                items.add(1, alert);
+                view.setItems(items, hint, hiddenList);
+            }
             main.postDelayed(this::requestRefresh, Math.max(16, alerts.until() - now));
         } else {
             view.setItems(items, hint, hiddenList);
