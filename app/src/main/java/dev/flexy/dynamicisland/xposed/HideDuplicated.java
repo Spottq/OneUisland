@@ -49,6 +49,14 @@ public final class HideDuplicated {
             }
             if (hide(p.args[0])) p.setResult(true);
         }));
+        for (String method : new String[]{"shouldSuppressPeek", "shouldSuppressStatusBar",
+                "shouldSuppressVisualEffect"}) {
+            Refl.hookAll(cl, ENTRY, method, SafeHook.before("island message visual suppression", p -> {
+                StatusBarNotification sbn = sbn(p.thisObject);
+                if (sbn != null && dev.flexy.dynamicisland.island.MessageSource
+                        .isShownInIsland(sbn.getKey())) p.setResult(true);
+            }));
+        }
     }
 
     private static void collectCopies(Collection<?> entries) {
