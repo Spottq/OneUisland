@@ -40,7 +40,7 @@ Open the module settings from LSPosed:
 - Detailed second capsule.
 - Cards: frosted glass design, recent Spotify playlists.
 - Alert toggles: headphone battery (every unlock or only on connect), Do Not Disturb, sound mode, low battery.
-- Notifications: WhatsApp and Telegram messages, Chrome downloads (each can be turned off).
+- Notifications: WhatsApp and Telegram messages, Chrome downloads (each can be turned off). WhatsApp and Telegram island alerts currently work only with Do Not Disturb enabled, due to a duplicate-notification bug under investigation.
 - Island position: center or left after the clock (grows only to the right, stops before the camera). Tablets and the inner screen of foldables also get "around the front camera". Foldables have separate settings for the inner and cover screens. The left island, and the centered island on tablets and the inner screen, can use a blurred background instead of black.
 
 ## Installation

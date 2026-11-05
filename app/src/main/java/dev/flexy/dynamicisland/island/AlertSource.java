@@ -492,6 +492,7 @@ final class AlertSource {
     private boolean allowed(IslandItem it) {
         boolean download = it.key.startsWith("dl:");
         if (download ? !IslandSettings.showDownloads() : !IslandSettings.showMessages()) return false;
+        if (!download && !dndOn()) return false;
         KeyguardManager km = ctx.getSystemService(KeyguardManager.class);
         if (km != null && km.isKeyguardLocked()) return false;
         if (oa.inCall()) return false;

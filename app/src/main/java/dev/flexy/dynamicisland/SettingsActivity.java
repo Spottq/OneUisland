@@ -91,6 +91,9 @@ public final class SettingsActivity extends Activity {
         gap(root);
         LinearLayout apps = group(root, "Notifications");
         toggle(apps, "WhatsApp and Telegram messages", Settings.SHOW_MESSAGES, Settings.DEF_SHOW_MESSAGES);
+        TextView messageNote = label("WhatsApp and Telegram island alerts only work with Do Not Disturb enabled while this bug is investigated.", 12, secondary, false);
+        messageNote.setPadding(0, 0, 0, dp(8));
+        apps.addView(messageNote);
         toggle(apps, "Chrome downloads", Settings.SHOW_DOWNLOADS, Settings.DEF_SHOW_DOWNLOADS);
 
         Button reset = new Button(this);
