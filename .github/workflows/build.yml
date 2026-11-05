@@ -4,16 +4,12 @@ on:
   push:
     branches:
       - main
-    tags:
-      - 'v*'
   pull_request:
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -35,11 +31,12 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :app:assembleRelease --stacktrace
-          cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/OneUisland-1.4.7.apk
+          apk=$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*-release*.apk' -print -quit)
+          test -n "$apk"
+          cp "$apk" app/build/outputs/apk/release/OneUisland-1.4.7.apk
 
-      - name: Publish APK release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+      - name: Upload testing APK
+        uses: actions/upload-artifact@v4
         with:
-          files: app/build/outputs/apk/release/OneUisland-1.4.7.apk
-          generate_release_notes: true
+          name: OneUisland-1.4.7
+          path: app/build/outputs/apk/release/OneUisland-1.4.7.apk
