@@ -472,6 +472,7 @@ final class AlertSource {
             IslandItem done = downloads.scan(all);
             IslandItem alert = msg != null ? msg : done;
             if (alert != null && allowed(alert)) {
+                if (alert.key.startsWith("msg:")) MessageSource.markShown(alert.key.substring(4));
                 show(alert, alert.key.startsWith("dl:") ? DOWNLOAD_SHOW_MS : MESSAGE_SHOW_MS);
             }
         } catch (Throwable t) {

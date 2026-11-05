@@ -1,6 +1,7 @@
 package dev.flexy.dynamicisland.island;
 
 import android.app.PendingIntent;
+import android.app.RemoteInput;
 import android.graphics.drawable.Drawable;
 
 import java.util.ArrayList;
@@ -52,6 +53,7 @@ public final class IslandItem {
         public final PendingIntent intent;
         public final Runnable runnable;
         public final boolean destructive;
+        public RemoteInput[] remoteInputs;
         public int glyph;
         public boolean active;
 

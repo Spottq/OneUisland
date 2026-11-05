@@ -2,6 +2,7 @@ package dev.flexy.dynamicisland.island;
 
 import android.app.Notification;
 import android.app.Person;
+import android.app.RemoteInput;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -19,7 +20,7 @@ import java.util.Set;
  * Chat messages from WhatsApp and Telegram. A new message becomes a short alert in the
  * island. Regular message notifications are not ongoing, so the Now Bar code never shows them.
  */
-final class MessageSource {
+public final class MessageSource {
     static final Set<String> PACKAGES = new HashSet<>(Arrays.asList(
             "com.whatsapp",
             "com.whatsapp.w4b",
@@ -38,6 +39,7 @@ final class MessageSource {
 
     private final Context ctx;
     private final Map<String, Long> posted = new HashMap<>();
+    private static final Set<String> ISLAND_KEYS = new HashSet<>();
     private boolean primed;
 
     MessageSource(Context ctx) {
@@ -70,8 +72,23 @@ final class MessageSource {
             }
         }
         posted.keySet().retainAll(live);
+        synchronized (ISLAND_KEYS) {
+            ISLAND_KEYS.retainAll(live);
+        }
         primed = true;
         return best == null ? null : build(best, bestMessage);
+    }
+
+    static void markShown(String key) {
+        synchronized (ISLAND_KEYS) {
+            ISLAND_KEYS.add(key);
+        }
+    }
+
+    public static boolean isShownInIsland(String key) {
+        synchronized (ISLAND_KEYS) {
+            return ISLAND_KEYS.contains(key);
+        }
     }
 
     private static boolean isNewMessage(Notification n, long post, long now) {
@@ -128,6 +145,18 @@ final class MessageSource {
         }
         it.accent = n.color != 0 ? Colors.readableOnBlack(n.color) : defaultAccent(pkg);
         it.contentIntent = n.contentIntent;
+        if (n.actions != null) {
+            for (Notification.Action action : n.actions) {
+            RemoteInput[] inputs = action.getRemoteInputs();
+            if (action.actionIntent == null || action.title == null
+                || inputs == null || inputs.length == 0) continue;
+            IslandItem.Action reply = new IslandItem.Action(
+                action.title, AppInfo.icon(ctx, pkg), action.actionIntent, null, false);
+            reply.remoteInputs = inputs;
+            it.actions.add(reply);
+            break;
+            }
+        }
         return it;
     }
 

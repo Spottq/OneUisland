@@ -193,6 +193,10 @@ public final class HideDuplicated {
     private static boolean hide(Object entry) {
         StatusBarNotification sbn = sbn(entry);
         if (sbn == null || LIVEBRIDGE_PKG.equals(sbn.getPackageName())) return false;
+        if (dev.flexy.dynamicisland.island.MessageSource.isShownInIsland(sbn.getKey())) {
+            HIDDEN.put(sbn.getKey(), SystemClock.uptimeMillis());
+            return true;
+        }
         if (isSummary(sbn.getNotification())
                 && sbn.getNotification().extras.containsKey("android.ongoingActivityNoti.style")) return true;
         boolean hide = COPIES.contains(sbn.getKey());
