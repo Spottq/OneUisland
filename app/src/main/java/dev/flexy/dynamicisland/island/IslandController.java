@@ -159,7 +159,7 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         media = new MediaSource(ctx, main, this::requestRefresh);
         cast = new CastSource(ctx);
         exit = new ExitAnimationBridge(cl);
-        alerts = new AlertSource(ctx, this::requestRefresh);
+        alerts = new AlertSource(ctx, oa, this::requestRefresh);
         torch = new FlashlightSource(ctx, main, this::requestRefresh);
         fader = new StatusBarIconFader(density);
     }
@@ -366,6 +366,7 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
             oa.collect(items, hidden, packages);
             media.collect(items, oa.foregroundPackage(), hidden, packages);
             cast.collect(items);
+            alerts.collectDownloads(items);
             AssistantApp.collectAll(items, ctx);
             if (torch.available()) items.removeIf(FlashlightSource::isSystemTorchItem);
             torch.collect(items, view.isExpanded());

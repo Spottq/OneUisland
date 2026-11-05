@@ -523,6 +523,11 @@ final class OaSource {
     private static final int CALL_SHOWN = 1;
     private static final int CALL_APP_VISIBLE = 2;
 
+    /** True while a call is ongoing. Without a call controller it is unknown, so this returns false. */
+    boolean inCall() {
+        return callController != null && callState() != CALL_NONE;
+    }
+
     private int callState() {
         if (callController == null) return CALL_SHOWN;
         Object info = Refl.get(callController, "callNotificationInfo");

@@ -41,6 +41,14 @@ final class IslandSettings {
         return values.getBoolean(Settings.ALERT_DND, Settings.DEF_ALERT_DND);
     }
 
+    static boolean showMessages() {
+        return values.getBoolean(Settings.SHOW_MESSAGES, Settings.DEF_SHOW_MESSAGES);
+    }
+
+    static boolean showDownloads() {
+        return values.getBoolean(Settings.SHOW_DOWNLOADS, Settings.DEF_SHOW_DOWNLOADS);
+    }
+
     static boolean alertRinger() {
         return values.getBoolean(Settings.ALERT_RINGER, Settings.DEF_ALERT_RINGER);
     }

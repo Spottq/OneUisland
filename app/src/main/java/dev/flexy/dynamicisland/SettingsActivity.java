@@ -88,6 +88,11 @@ public final class SettingsActivity extends Activity {
         toggle(alerts, "Sound / Vibrate / Mute", Settings.ALERT_RINGER, Settings.DEF_ALERT_RINGER);
         toggle(alerts, "Low battery (20% and 10%)", Settings.ALERT_BATTERY, Settings.DEF_ALERT_BATTERY);
 
+        gap(root);
+        LinearLayout apps = group(root, "Notifications");
+        toggle(apps, "WhatsApp and Telegram messages", Settings.SHOW_MESSAGES, Settings.DEF_SHOW_MESSAGES);
+        toggle(apps, "Chrome downloads", Settings.SHOW_DOWNLOADS, Settings.DEF_SHOW_DOWNLOADS);
+
         Button reset = new Button(this);
         reset.setText("Reset to defaults");
         reset.setAllCaps(false);

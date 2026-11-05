@@ -1,5 +1,6 @@
 package dev.flexy.dynamicisland.island;
 
+import android.app.KeyguardManager;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -24,18 +25,26 @@ final class AlertSource {
     private static final int DND_COLOR = 0xFF1B6CF7;
     private static final int OFF_GREY = 0xFFAEAEB2;
     private static final int OFF_TEXT = 0xFFD1D1D6;
+    private static final long MESSAGE_SHOW_MS = 4500;
+    private static final long DOWNLOAD_SHOW_MS = 3500;
 
     private final Context ctx;
+    private final OaSource oa;
     private final Runnable onChanged;
+    private final MessageSource messages;
+    private final DownloadSource downloads;
     private IslandItem current;
     private long until;
 
     private Boolean dndOn;
     private Pods pods;
 
-    AlertSource(Context ctx, Runnable onChanged) {
+    AlertSource(Context ctx, OaSource oa, Runnable onChanged) {
         this.ctx = ctx;
+        this.oa = oa;
         this.onChanged = onChanged;
+        this.messages = new MessageSource(ctx);
+        this.downloads = new DownloadSource(ctx, onChanged);
     }
 
     void start() {
@@ -100,7 +109,8 @@ final class AlertSource {
         if (item == null) return;
         current = item;
         until = SystemClock.uptimeMillis() + ms;
-        XLog.i("alert " + item.key + ": " + item.title + " " + item.trailingText);
+        // Only the key goes to the log: alert titles can hold private message text.
+        XLog.i("alert " + item.key);
         onChanged.run();
     }
 
@@ -457,6 +467,35 @@ final class AlertSource {
         Pods before = shownPods();
         pods = now;
         podsChanged(before);
+        try {
+            IslandItem msg = messages.scan(all);
+            IslandItem done = downloads.scan(all);
+            IslandItem alert = msg != null ? msg : done;
+            if (alert != null && allowed(alert)) {
+                show(alert, alert.key.startsWith("dl:") ? DOWNLOAD_SHOW_MS : MESSAGE_SHOW_MS);
+            }
+        } catch (Throwable t) {
+            XLog.e("message and download alerts failed", t);
+        }
+    }
+
+    /** Live downloads for the island, added on each refresh. */
+    void collectDownloads(List<IslandItem> out) {
+        downloads.collect(out, oa);
+    }
+
+    /**
+     * New message and download alerts stay quiet when the screen is locked, Do Not Disturb is on,
+     * a call is running, or the app that sent them is already in front.
+     */
+    private boolean allowed(IslandItem it) {
+        boolean download = it.key.startsWith("dl:");
+        if (download ? !IslandSettings.showDownloads() : !IslandSettings.showMessages()) return false;
+        KeyguardManager km = ctx.getSystemService(KeyguardManager.class);
+        if (km != null && km.isKeyguardLocked()) return false;
+        if (dndOn() || oa.inCall()) return false;
+        String foreground = oa.foregroundPackage();
+        return foreground == null || !foreground.equals(it.packageName);
     }
 
     private Pods shownPods() {

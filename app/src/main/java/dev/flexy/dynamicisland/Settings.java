@@ -18,6 +18,11 @@ public final class Settings {
     public static final String ALERT_DND = "alert_dnd";
     public static final String ALERT_RINGER = "alert_ringer";
 
+    public static final String SHOW_MESSAGES = "show_messages";
+    public static final boolean DEF_SHOW_MESSAGES = true;
+    public static final String SHOW_DOWNLOADS = "show_downloads";
+    public static final boolean DEF_SHOW_DOWNLOADS = true;
+
     public static final String ALERT_BATTERY = "alert_battery";
     public static final boolean DEF_ALERT_BATTERY = true;
 
