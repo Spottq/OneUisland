@@ -3043,6 +3043,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
         final String trail;
         final StaticLayout subtitle;
         final float rowH;
+        float actionsTop = -1;
         final float pillW = dp(76);
         final float pillH = dp(46);
 
@@ -3065,6 +3066,10 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
                     + (subtitle == null ? 0f : dp(2) + subtitle.getHeight());
             rowH = Math.max(item.iconRight ? pillH : lead, textH);
             h = pad * 2 + rowH;
+            if (!item.actions.isEmpty()) {
+                actionsTop = h + dp(14);
+                h = actionsTop + layoutTextButtons(actionsTop, pad) + pad;
+            }
             if (item.iconRight) {
                 Btn b = new Btn();
                 b.r.set(w - pad - pillW, pad + (rowH - pillH) / 2f, w - pad, pad + (rowH + pillH) / 2f);
@@ -3132,6 +3137,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
             } else {
                 Drawable d = item.cardImage != null ? item.cardImage : item.icon;
                 if (d != null) drawDrawable(c, d, item.iconIsImage, item.iconTint != 0 ? item.iconTint : item.accent, x + pad, midY - lead / 2f, lead, a0, lead * 0.22f);
+                if (actionsTop >= 0) drawButtons(c, x, y + actionsTop + dy, a0 * rowAlpha(el, 2));
             }
             float tx = x + pad + lead + dp(16);
             Paint.FontMetrics tf = titlePaint.getFontMetrics();
