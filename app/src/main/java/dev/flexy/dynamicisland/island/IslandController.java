@@ -522,6 +522,7 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         float cx = w / 2f;
         float cy = statusBarCenterY();
         float holeD = 0f;
+        Rect landscapeNotchRect = null;
         DisplayCutout c = window.cutout();
         Rect top = c != null ? c.getBoundingRectTop() : null;
         if (top != null && top.isEmpty()) top = null;
@@ -531,11 +532,11 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         }
         if (position == dev.flexy.dynamicisland.Settings.POS_CAMERA && top != null) cx = top.exactCenterX() - b.left;
         if (landscape && IslandSettings.landscapeNotch()) {
-            Rect notch = landscapeNotch(c, b);
-            if (notch != null) {
-                cx = notch.exactCenterX() - b.left;
-                cy = notch.exactCenterY() - b.top;
-                top = notch;
+            landscapeNotchRect = landscapeNotch(c, b);
+            if (landscapeNotchRect != null) {
+                cx = landscapeNotchRect.exactCenterX() - b.left;
+                cy = landscapeNotchRect.exactCenterY() - b.top;
+                top = landscapeNotchRect;
             }
         }
         if (top != null && Math.abs(top.exactCenterX() - b.left - cx) < 10 * density) {
@@ -548,6 +549,11 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
             holeD = 0f;
             limit = w - 12 * density;
             if (top != null && top.left - b.left > anchor) limit = Math.min(limit, top.left - b.left - 7 * density);
+        }
+        if (landscapeNotchRect != null) {
+            anchor = landscapeNotchRect.left - b.left;
+            limit = landscapeNotchRect.right - b.left;
+            holeD = 0f;
         }
         if (fader != null) fader.setKeepDate(tablet && position == dev.flexy.dynamicisland.Settings.POS_LEFT);
         boolean glass = (position == dev.flexy.dynamicisland.Settings.POS_LEFT
