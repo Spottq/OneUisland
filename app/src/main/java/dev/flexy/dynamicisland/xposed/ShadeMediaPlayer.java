@@ -44,6 +44,7 @@ final class ShadeMediaPlayer {
                 for (Map.Entry<View, Binding> entry : PLAYERS.entrySet()) {
                     View root = entry.getKey();
                     if (!descendant(root, layout)) continue;
+                    applySideNotch(root);
                     IslandItem item = entry.getValue().item(root);
                     entry.getValue().updateBackground(root, item != null);
                     if (item == null) continue;
@@ -88,9 +89,27 @@ final class ShadeMediaPlayer {
                         PLAYERS.put(view, new Binding(view, p.thisObject));
                         XLog.i("shade media renderer attached: " + view.getClass().getName());
                     }
+                    applySideNotch(view);
                     view.invalidate();
                     view.requestLayout();
                 }));
+    }
+
+    private static final java.util.Set<View> HIDDEN_BY_SIDE =
+            java.util.Collections.newSetFromMap(new WeakHashMap<>());
+
+    /**
+     * Landscape with a side notch: the shade's own media player is hidden, because the island
+     * shows the player and the messages in one row instead.
+     */
+    private static void applySideNotch(View root) {
+        IslandController ctl = IslandController.get();
+        if (ctl != null && ctl.sideNotchActive()) {
+            if (root.getVisibility() != View.GONE) root.setVisibility(View.GONE);
+            HIDDEN_BY_SIDE.add(root);
+        } else if (HIDDEN_BY_SIDE.remove(root) && root.getVisibility() == View.GONE) {
+            root.setVisibility(View.VISIBLE);
+        }
     }
 
     /** True when the shade is on a landscape screen, so media cards use the compact row. */
