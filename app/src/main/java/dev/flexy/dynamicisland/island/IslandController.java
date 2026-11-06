@@ -362,11 +362,6 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         return window != null && window.setSurfaceFade(alpha, scale, px, py);
     }
 
-    /** True in landscape with a side notch, where the shade's media player is replaced by the island. */
-    public boolean sideNotchActive() {
-        return sideRotActive;
-    }
-
     private void refreshNow() {
         refreshPosted = false;
         ensureWindow();
@@ -588,7 +583,6 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         // Left notch: -90 turns downward content to the right, so expanded cards line up rightward.
         float sideDeg = cx < w / 2f ? -90f : 90f;
         view.setSideRotation(sideRotActive, sideDeg, cx, cy);
-        view.setShadeInIsland(sideRotActive);
         if (fader != null) fader.setKeepDate(tablet && position == dev.flexy.dynamicisland.Settings.POS_LEFT);
         boolean glass = (position == dev.flexy.dynamicisland.Settings.POS_LEFT
                 || (tablet && position == dev.flexy.dynamicisland.Settings.POS_CENTER)) && IslandSettings.glassPill(tablet);
