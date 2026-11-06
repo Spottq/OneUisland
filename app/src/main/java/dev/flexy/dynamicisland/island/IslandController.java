@@ -580,7 +580,8 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         }
         // Landscape with a side notch: turn the pill vertical on the notch, like iPhone.
         sideRotActive = landscapeNotchRect != null;
-        float sideDeg = cx < w / 2f ? 90f : -90f;
+        // Left notch: -90 turns downward content to the right, so expanded cards line up rightward.
+        float sideDeg = cx < w / 2f ? -90f : 90f;
         view.setSideRotation(sideRotActive, sideDeg, cx, cy);
         if (fader != null) fader.setKeepDate(tablet && position == dev.flexy.dynamicisland.Settings.POS_LEFT);
         boolean glass = (position == dev.flexy.dynamicisland.Settings.POS_LEFT

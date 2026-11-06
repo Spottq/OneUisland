@@ -134,8 +134,9 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
     private static final Object BUBBLE_BLUR = new Object();
 
     /**
-     * Landscape with a side notch: the compact pill turns 90 degrees and sits vertically on the notch,
-     * like iPhone. Expanded cards are not rotated and keep the anchored layout.
+     * Landscape with a side notch: the whole island (pill and expanded cards) turns 90 degrees around
+     * the notch. The compact pill sits vertically on the notch, and expanded cards stack to the side
+     * as a horizontal row instead of running off the bottom of the screen.
      */
     private boolean sideRot;
     private float sideDeg;
@@ -154,7 +155,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
     }
 
     private boolean rotatedNow() {
-        return sideRot && mode != Mode.EXPANDED;
+        return sideRot;
     }
 
     private float centerFor(float w) {
