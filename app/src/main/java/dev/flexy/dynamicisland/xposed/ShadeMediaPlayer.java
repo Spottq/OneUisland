@@ -107,12 +107,12 @@ final class ShadeMediaPlayer {
         if (treeLoggedState == state) return;
         treeLoggedState = state;
         StringBuilder sb = new StringBuilder("shade tree landscape=" + land);
-        android.view.ViewParent p = from;
-        for (int i = 0; i < 8 && p instanceof View; i++) {
-            View pv = (View) p;
-            sb.append(" | ").append(pv.getClass().getSimpleName())
-                    .append(' ').append(pv.getWidth()).append('x').append(pv.getHeight());
-            p = pv.getParent();
+        View cur = from;
+        for (int i = 0; i < 8 && cur != null; i++) {
+            sb.append(" | ").append(cur.getClass().getSimpleName())
+                    .append(' ').append(cur.getWidth()).append('x').append(cur.getHeight());
+            android.view.ViewParent next = cur.getParent();
+            cur = next instanceof View ? (View) next : null;
         }
         XLog.i(sb.toString());
     }
