@@ -1,5 +1,6 @@
 package dev.flexy.dynamicisland.island;
 
+import android.app.KeyguardManager;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -24,23 +25,32 @@ final class AlertSource {
     private static final int DND_COLOR = 0xFF1B6CF7;
     private static final int OFF_GREY = 0xFFAEAEB2;
     private static final int OFF_TEXT = 0xFFD1D1D6;
+    private static final long MESSAGE_SHOW_MS = 4500;
+    private static final long DOWNLOAD_SHOW_MS = 3500;
 
     private final Context ctx;
+    private final OaSource oa;
     private final Runnable onChanged;
+    private final MessageSource messages;
+    private final DownloadSource downloads;
     private IslandItem current;
     private long until;
 
     private Boolean dndOn;
     private Pods pods;
 
-    AlertSource(Context ctx, Runnable onChanged) {
+    AlertSource(Context ctx, OaSource oa, Runnable onChanged) {
         this.ctx = ctx;
+        this.oa = oa;
         this.onChanged = onChanged;
+        this.messages = new MessageSource(ctx);
+        this.downloads = new DownloadSource(ctx, onChanged);
     }
 
     void start() {
         startBluetooth();
         startBattery();
+        startConnectivity();
         dndOn = dndOn();
         ringerMode = ringerMode();
         try {
@@ -100,7 +110,7 @@ final class AlertSource {
         if (item == null) return;
         current = item;
         until = SystemClock.uptimeMillis() + ms;
-        XLog.i("alert " + item.key + ": " + item.title + " " + item.trailingText);
+        XLog.i("alert " + item.key);
         onChanged.run();
     }
 
@@ -122,6 +132,92 @@ final class AlertSource {
             off.putExtra("uid", ctx.getApplicationInfo().uid);
             ctx.sendBroadcast(off);
         }
+    }
+
+    private Boolean lastAirplane;
+    private Boolean lastWifi;
+    private static final int AIRPLANE_ORANGE = 0xFFFF9F0A;
+    private static final int WIFI_BLUE = 0xFF0A84FF;
+
+    private boolean airplaneOn() {
+        try {
+            return android.provider.Settings.Global.getInt(ctx.getContentResolver(),
+                    android.provider.Settings.Global.AIRPLANE_MODE_ON, 0) == 1;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** Airplane mode and Wi-Fi on or off. The first broadcast only sets the baseline, so nothing pops up at boot. */
+    private void startConnectivity() {
+        lastAirplane = airplaneOn();
+        try {
+            ctx.registerReceiver(new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context c, Intent i) {
+                    boolean on = i.getBooleanExtra("state", airplaneOn());
+                    if (lastAirplane != null && lastAirplane == on) return;
+                    lastAirplane = on;
+                    if (IslandSettings.alertAirplane()) show(airplaneItem(on));
+                }
+            }, new IntentFilter("android.intent.action.AIRPLANE_MODE"), Context.RECEIVER_EXPORTED);
+        } catch (Throwable t) {
+            XLog.e("airplane receiver failed", t);
+        }
+        try {
+            ctx.registerReceiver(new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context c, Intent i) {
+                    int state = i.getIntExtra("wifi_state", -1);
+                    if (state != 1 && state != 3) return; // only the settled states: 1 disabled, 3 enabled
+                    boolean on = state == 3;
+                    Boolean before = lastWifi;
+                    lastWifi = on;
+                    if (before == null || before == on) return;
+                    // Airplane mode also switches Wi-Fi off, and its own alert already covers that.
+                    if (airplaneOn()) return;
+                    if (IslandSettings.alertWifi()) show(wifiItem(on));
+                }
+            }, new IntentFilter("android.net.wifi.WIFI_STATE_CHANGED"), Context.RECEIVER_EXPORTED);
+        } catch (Throwable t) {
+            XLog.e("wifi receiver failed", t);
+        }
+    }
+
+    private IslandItem airplaneItem(boolean on) {
+        IslandItem it = new IslandItem("alert:airplane");
+        it.alert = true;
+        it.kind = IslandItem.Kind.LIVE;
+        it.packageName = ctx.getPackageName();
+        it.icon = systemUiDrawable("stat_sys_airplane_mode");
+        if (it.icon == null) it.icon = frameworkDrawable("ic_qs_airplane");
+        it.iconColor = true;
+        it.accent = on ? Colors.readableOnBlack(AIRPLANE_ORANGE) : OFF_GREY;
+        it.title = systemUiString("airplane_mode", "Airplane mode");
+        it.trailing = IslandItem.Trailing.TEXT;
+        it.trailingText = on ? systemUiString("switch_bar_on", "On") : systemUiString("switch_bar_off", "Off");
+        it.trailingColor = on ? it.accent : OFF_TEXT;
+        it.toggle = on ? 1 : 0;
+        it.postTime = Long.MAX_VALUE;
+        return it;
+    }
+
+    private IslandItem wifiItem(boolean on) {
+        IslandItem it = new IslandItem("alert:wifi");
+        it.alert = true;
+        it.kind = IslandItem.Kind.LIVE;
+        it.packageName = ctx.getPackageName();
+        it.icon = systemUiDrawable("ic_qs_wifi_full_4");
+        if (it.icon == null) it.icon = frameworkDrawable("ic_qs_wifi_full_4");
+        it.iconColor = true;
+        it.accent = on ? Colors.readableOnBlack(WIFI_BLUE) : OFF_GREY;
+        it.title = systemUiString("quick_settings_wifi_label", "Wi-Fi");
+        it.trailing = IslandItem.Trailing.TEXT;
+        it.trailingText = on ? systemUiString("switch_bar_on", "On") : systemUiString("switch_bar_off", "Off");
+        it.trailingColor = on ? it.accent : OFF_TEXT;
+        it.toggle = on ? 1 : 0;
+        it.postTime = Long.MAX_VALUE;
+        return it;
     }
 
     private IslandItem dndItem(boolean on) {
@@ -457,6 +553,31 @@ final class AlertSource {
         Pods before = shownPods();
         pods = now;
         podsChanged(before);
+        try {
+            IslandItem msg = messages.scan(all);
+            IslandItem done = downloads.scan(all);
+            IslandItem alert = msg != null ? msg : done;
+            if (alert != null && allowed(alert)) {
+                show(alert, alert.key.startsWith("dl:") ? DOWNLOAD_SHOW_MS : MESSAGE_SHOW_MS);
+            }
+        } catch (Throwable t) {
+            XLog.e("message and download alerts failed", t);
+        }
+    }
+
+    void collectDownloads(List<IslandItem> out) {
+        downloads.collect(out, oa);
+    }
+
+    private boolean allowed(IslandItem it) {
+        boolean download = it.key.startsWith("dl:");
+        if (download ? !IslandSettings.showDownloads() : !IslandSettings.showMessages()) return false;
+        if (!download && !dndOn()) return false;
+        KeyguardManager km = ctx.getSystemService(KeyguardManager.class);
+        if (km != null && km.isKeyguardLocked()) return false;
+        if (oa.inCall()) return false;
+        String foreground = oa.foregroundPackage();
+        return foreground == null || !foreground.equals(it.packageName);
     }
 
     private Pods shownPods() {

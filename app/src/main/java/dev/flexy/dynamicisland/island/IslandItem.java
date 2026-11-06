@@ -143,6 +143,7 @@ public final class IslandItem {
     public java.util.function.LongConsumer mediaSeek;
 
     public boolean alert;
+    public boolean idle;
     public boolean iconColor;
     public int iconTint;
     public int trailingColor;

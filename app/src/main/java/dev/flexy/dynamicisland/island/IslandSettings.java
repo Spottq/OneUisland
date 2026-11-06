@@ -25,6 +25,30 @@ final class IslandSettings {
         return values.getBoolean(Settings.PREVIEW_LENGTH, false);
     }
 
+    static boolean showFullscreen() {
+        return values.getBoolean(Settings.SHOW_FULLSCREEN, Settings.DEF_SHOW_FULLSCREEN);
+    }
+
+    static boolean rainbowIdle() {
+        return values.getBoolean(Settings.RAINBOW_IDLE, Settings.DEF_RAINBOW_IDLE);
+    }
+
+    static boolean landscapeNotch() {
+        return values.getBoolean(Settings.LANDSCAPE_NOTCH, Settings.DEF_LANDSCAPE_NOTCH);
+    }
+
+    static boolean alertAirplane() {
+        return values.getBoolean(Settings.ALERT_AIRPLANE, Settings.DEF_ALERT_AIRPLANE);
+    }
+
+    static boolean alertWifi() {
+        return values.getBoolean(Settings.ALERT_WIFI, Settings.DEF_ALERT_WIFI);
+    }
+
+    static boolean expandLandscape() {
+        return values.getBoolean(Settings.EXPAND_LANDSCAPE, Settings.DEF_EXPAND_LANDSCAPE);
+    }
+
     static boolean alertBattery() {
         return values.getBoolean(Settings.ALERT_BATTERY, Settings.DEF_ALERT_BATTERY);
     }
@@ -39,6 +63,14 @@ final class IslandSettings {
 
     static boolean alertDnd() {
         return values.getBoolean(Settings.ALERT_DND, Settings.DEF_ALERT_DND);
+    }
+
+    static boolean showMessages() {
+        return values.getBoolean(Settings.SHOW_MESSAGES, Settings.DEF_SHOW_MESSAGES);
+    }
+
+    static boolean showDownloads() {
+        return values.getBoolean(Settings.SHOW_DOWNLOADS, Settings.DEF_SHOW_DOWNLOADS);
     }
 
     static boolean alertRinger() {

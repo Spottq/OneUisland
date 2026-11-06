@@ -1,5 +1,3 @@
-// Compile-only stubs of the legacy Xposed API (de.robv.android.xposed, API 82+).
-// The real classes are provided by LSPosed at runtime; nothing from here is packaged.
 plugins {
     id 'java-library'
 }

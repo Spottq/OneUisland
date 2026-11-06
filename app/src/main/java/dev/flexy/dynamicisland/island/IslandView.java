@@ -5,13 +5,14 @@ import android.content.Context;
 import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
-import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RadialGradient;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.Shader;
+import android.graphics.PathMeasure;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -132,7 +133,33 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
     private static final Object PILL_BLUR = new Object();
     private static final Object BUBBLE_BLUR = new Object();
 
+    /**
+     * Landscape with a side notch: the whole island (pill and expanded cards) turns 90 degrees around
+     * the notch. The compact pill sits vertically on the notch, and expanded cards stack to the side
+     * as a horizontal row instead of running off the bottom of the screen.
+     */
+    private boolean sideRot;
+    private float sideDeg;
+    private float sideCx;
+    private float sideCy;
+
+    /** Pivot is the notch center in view coordinates. */
+    public void setSideRotation(boolean on, float degrees, float pivotX, float pivotY) {
+        if (sideRot == on && sideDeg == degrees && sideCx == pivotX && sideCy == pivotY) return;
+        sideRot = on;
+        sideDeg = degrees;
+        sideCx = pivotX;
+        sideCy = pivotY;
+        invalidate();
+        scheduleFrame();
+    }
+
+    private boolean rotatedNow() {
+        return sideRot;
+    }
+
     private float centerFor(float w) {
+        if (rotatedNow()) return sideCx;
         return Float.isNaN(anchorLeft) ? cx : anchorLeft + w / 2f;
     }
 
@@ -733,9 +760,28 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
         float w = mainIn != null && mode == Mode.COMPACT ? width.target() : Math.max(minPillW, dp(92));
         float mid = centerFor(w);
         out.set(mid - w / 2f, cy - pillH / 2f, mid + w / 2f, cy + pillH / 2f);
+        if (rotatedNow()) {
+            Matrix m = new Matrix();
+            m.setRotate(sideDeg, sideCx, sideCy);
+            m.mapRect(out);
+        }
     }
 
     public void getTouchRegion(Region out) {
+        if (!rotatedNow()) {
+            buildTouchRegion(out);
+            return;
+        }
+        Region flat = new Region();
+        buildTouchRegion(flat);
+        RectF box = new RectF(flat.getBounds());
+        Matrix m = new Matrix();
+        m.setRotate(sideDeg, sideCx, sideCy);
+        m.mapRect(box);
+        out.set(Math.round(box.left), Math.round(box.top), Math.round(box.right), Math.round(box.bottom));
+    }
+
+    private void buildTouchRegion(Region out) {
         out.setEmpty();
         float m = dp(4);
         if (mode == Mode.HIDDEN) {
@@ -913,6 +959,8 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
 
     private void expand(List<IslandItem> show) {
         if (show.isEmpty()) return;
+        // Landscape with a side notch: expansion is under investigation, so the island stays compact.
+        if (sideRot && !IslandSettings.expandLandscape()) return;
         boolean wasExpanded = mode == Mode.EXPANDED;
         long merge = !wasExpanded && split.value() > 0.05f ? MERGE_MS : 0;
         mode = Mode.EXPANDED;
@@ -1581,6 +1629,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
         long t = now();
         computeMain(mainRect);
         int save = canvas.save();
+        if (rotatedNow()) canvas.rotate(sideDeg, sideCx, sideCy);
         boolean layered = vis < 0.995f;
         if (layered) {
             canvas.saveLayerAlpha(0, 0, screenW, getHeight(), Math.round(255 * vis));
@@ -1975,9 +2024,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
             }
             return;
         }
-        item.icon.setColorFilter(GRAYSCALE);
         drawDrawable(c, item.icon, true, 0, left, midY - size / 2f, size, alpha, size * 0.26f);
-        item.icon.setColorFilter(null);
     }
 
     private void drawLeading(Canvas c, IslandItem item, float left, float midY, float size, float alpha) {
@@ -2225,6 +2272,13 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
         float scoreW;
         String scoreA;
         String scoreB;
+        final Path idlePath = new Path();
+        final Path idleSegment = new Path();
+        final PathMeasure idlePathMeasure = new PathMeasure();
+        final int[] idleColors = {0xFFFF3B30, 0xFFFF9500, 0xFFFFCC00, 0xFF34C759,
+            0xFF00C7BE, 0xFF0A84FF, 0xFFAF52DE};
+        float idleGradientWidth = -1f;
+        float idleGradientHeight = -1f;
 
         CompactContent(IslandItem item) {
             super(item);
@@ -2327,8 +2381,58 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
                 }
                 return;
             }
+            if (item.idle) {
+                drawIdlePill(c, s, alpha);
+                if (IslandSettings.rainbowIdle()) postInvalidateDelayed(66L);
+                return;
+            }
             drawLeadingMono(c, item, s.left + padding, midY, lead, alpha);
             if (trailW > 0) drawTrailing(c, item, trailText, s.right - padding, midY, trailW, alpha);
+        }
+
+        private void drawIdlePill(Canvas c, RectF s, float alpha) {
+            if (!IslandSettings.rainbowIdle()) {
+                strokePaint.setStyle(Paint.Style.STROKE);
+                strokePaint.setStrokeWidth(dp(1.5f));
+                strokePaint.setColor(Colors.withAlpha(item.accent, alpha * 0.22f));
+                tmpRect.set(s.left + dp(1.5f), s.top + dp(1.5f), s.right - dp(1.5f), s.bottom - dp(1.5f));
+                c.drawRoundRect(tmpRect, s.height() / 2f, s.height() / 2f, strokePaint);
+                strokePaint.setStyle(Paint.Style.FILL);
+                return;
+            }
+            float phase = (SystemClock.uptimeMillis() % 1800L) / 1800f;
+            if (idleGradientWidth != s.width() || idleGradientHeight != s.height()) {
+                tmpRect.set(s.left + dp(1.5f), s.top + dp(1.5f), s.right - dp(1.5f), s.bottom - dp(1.5f));
+                idlePath.reset();
+                idlePath.addRoundRect(tmpRect, s.height() / 2f, s.height() / 2f, Path.Direction.CW);
+                idlePathMeasure.setPath(idlePath, false);
+                idleGradientWidth = s.width();
+                idleGradientHeight = s.height();
+            }
+            strokePaint.setStyle(Paint.Style.STROKE);
+            strokePaint.setStrokeWidth(dp(1.5f));
+            strokePaint.setColor(Colors.withAlpha(item.accent, alpha * 0.22f));
+            c.drawPath(idlePath, strokePaint);
+            float length = idlePathMeasure.getLength();
+            float head = phase * length;
+            for (int i = 0; i < idleColors.length; i++) {
+                float start = head - (idleColors.length - 1 - i) * length * 0.035f;
+                float end = start + length * 0.04f;
+                while (start < 0f) {
+                    start += length;
+                    end += length;
+                }
+                idleSegment.reset();
+                if (end <= length) {
+                    idlePathMeasure.getSegment(start, end, idleSegment, true);
+                } else {
+                    idlePathMeasure.getSegment(start, length, idleSegment, true);
+                    idlePathMeasure.getSegment(0f, end - length, idleSegment, true);
+                }
+                strokePaint.setColor(Colors.withAlpha(idleColors[i], alpha * 0.95f));
+                c.drawPath(idleSegment, strokePaint);
+            }
+            strokePaint.setStyle(Paint.Style.FILL);
         }
 
         private void drawTeams(Canvas c, RectF s, float midY, float lead, float alpha) {
@@ -2539,7 +2643,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
     }
 
     private CardBody makeBody(IslandItem it, float w, boolean shadeCard) {
-        if (it.isMedia) return new MediaBody(it, w);
+        if (it.isMedia) return new MediaBody(it, w, shadeCard && shadeLandscape);
         if (it.claude) return new ClaudeBody(it, w);
         if (it.torch) return new TorchBody(it, w);
         if (it.alert) return new AlertBody(it, w);
@@ -2557,6 +2661,15 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
                 || (it.trailing == IslandItem.Trailing.CHRONOMETER && it.progress < 0);
         if (timerLike) return new TimerBody(it, w);
         return new LiveBody(it, w);
+    }
+
+    private boolean shadeLandscape;
+
+    /** Shade cards: lay the media player out as one compact row when the screen is landscape. */
+    public void setShadeLandscape(boolean on) {
+        if (shadeLandscape == on) return;
+        shadeLandscape = on;
+        shadeBody = null;
     }
 
     private CardBody shadeBody(IslandItem item, float width) {
@@ -3043,6 +3156,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
         final String trail;
         final StaticLayout subtitle;
         final float rowH;
+        float actionsTop = -1;
         final float pillW = dp(76);
         final float pillH = dp(46);
 
@@ -3057,7 +3171,9 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
             subtitle = item.iconRight && item.subtitle != null ? layout(item.subtitle, bodyPaint, Math.round(textW), 2) : null;
             overline = item.overline == null ? null
                     : TextUtils.ellipsize(item.overline, bodyPaint, textW, TextUtils.TruncateAt.END).toString();
-            title = item.title == null ? null : layout(item.title, titlePaint, Math.round(textW), 2);
+                boolean message = item.key.startsWith("msg:");
+                title = item.title == null ? null
+                    : layout(item.title, message ? bodyPaint : titlePaint, Math.round(textW), message ? 4 : 2);
             trail = item.trailingText == null ? null : item.trailingText.toString();
             Paint.FontMetrics bf = bodyPaint.getFontMetrics();
             float overH = overline == null ? 0f : bf.descent - bf.ascent + dp(1);
@@ -3065,6 +3181,10 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
                     + (subtitle == null ? 0f : dp(2) + subtitle.getHeight());
             rowH = Math.max(item.iconRight ? pillH : lead, textH);
             h = pad * 2 + rowH;
+            if (!item.actions.isEmpty()) {
+                actionsTop = h + dp(14);
+                h = actionsTop + layoutTextButtons(actionsTop, pad) + pad;
+            }
             if (item.iconRight) {
                 Btn b = new Btn();
                 b.r.set(w - pad - pillW, pad + (rowH - pillH) / 2f, w - pad, pad + (rowH + pillH) / 2f);
@@ -3132,6 +3252,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
             } else {
                 Drawable d = item.cardImage != null ? item.cardImage : item.icon;
                 if (d != null) drawDrawable(c, d, item.iconIsImage, item.iconTint != 0 ? item.iconTint : item.accent, x + pad, midY - lead / 2f, lead, a0, lead * 0.22f);
+                if (actionsTop >= 0) drawButtons(c, x, y + actionsTop + dy, a0 * rowAlpha(el, 2));
             }
             float tx = x + pad + lead + dp(16);
             Paint.FontMetrics tf = titlePaint.getFontMetrics();
@@ -4193,26 +4314,38 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
             return clamp01((lx - barLeft) / Math.max(1f, barRight - barLeft));
         }
 
-        MediaBody(IslandItem item, float w) {
+        MediaBody(IslandItem item, float w, boolean compact) {
             super(item, w);
             glowPaint.setMaskFilter(new BlurMaskFilter(dp(5), BlurMaskFilter.Blur.NORMAL));
-            int textW = Math.max(1, Math.round(w - pad * 2 - art - dp(14) - tile - dp(10)));
+            // Compact: art and text on the left, controls on the right, seek bar underneath.
+            int textW = Math.max(1, Math.round(compact
+                    ? w * 0.55f - pad - art - dp(24)
+                    : w - pad * 2 - art - dp(14) - tile - dp(10)));
             title = item.title == null ? null : layout(item.title, mediaTitlePaint(), textW, 1);
             artist = item.subtitle == null ? null : layout(item.subtitle, mediaArtistPaint(), textW, 1);
-            seekTop = pad + art + dp(16);
-            controlsTop = seekTop + dp(14) + dp(10);
+            seekTop = compact ? pad + art + dp(10) : pad + art + dp(16);
+            controlsTop = compact ? pad + (art - controlH) / 2f : seekTop + dp(14) + dp(10);
             String totalText = item.mediaDuration > 0 ? formatTimePadded(item.mediaDuration) : "--:--";
             barLeft = pad + smallPaint.measureText("00:00") + dp(10);
             barRight = w - pad - smallPaint.measureText(totalText) - dp(10);
             float span = w - pad * 2;
-            if (item.mediaCustom.size() > 0) addCustom(item.mediaCustom.get(0), pad + span * 0.08f);
-            addControl(Glyphs.PREV, pad + span * 0.30f, item.mediaPrev, false);
-            addControl(item.playing ? Glyphs.PAUSE : Glyphs.PLAY, pad + span * 0.5f, item.mediaPlayPause, true);
-            addControl(Glyphs.NEXT, pad + span * 0.70f, item.mediaNext, false);
-            if (item.mediaCustom.size() > 1) addCustom(item.mediaCustom.get(1), pad + span * 0.92f);
-            h = controlsTop + controlH + dp(14);
+            if (compact) {
+                float left = w * 0.55f;
+                float cs = w - pad - tile - dp(16) - left;
+                addControl(Glyphs.PREV, left + cs * 0.2f, item.mediaPrev, false);
+                addControl(item.playing ? Glyphs.PAUSE : Glyphs.PLAY, left + cs * 0.5f, item.mediaPlayPause, true);
+                addControl(Glyphs.NEXT, left + cs * 0.8f, item.mediaNext, false);
+                h = seekTop + dp(26);
+            } else {
+                if (item.mediaCustom.size() > 0) addCustom(item.mediaCustom.get(0), pad + span * 0.08f);
+                addControl(Glyphs.PREV, pad + span * 0.30f, item.mediaPrev, false);
+                addControl(item.playing ? Glyphs.PAUSE : Glyphs.PLAY, pad + span * 0.5f, item.mediaPlayPause, true);
+                addControl(Glyphs.NEXT, pad + span * 0.70f, item.mediaNext, false);
+                if (item.mediaCustom.size() > 1) addCustom(item.mediaCustom.get(1), pad + span * 0.92f);
+                h = controlsTop + controlH + dp(14);
+            }
             playerH = h;
-            int n = Math.min(4, item.mediaShortcuts.size());
+            int n = compact ? 0 : Math.min(4, item.mediaShortcuts.size());
             if (n > 0) {
                 float gap = dp(10);
                 float side = (span - gap * 3) / 4f;
@@ -4799,6 +4932,21 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent e) {
+        if (!rotatedNow()) return handleTouch(e);
+        Matrix fwd = new Matrix();
+        fwd.setRotate(sideDeg, sideCx, sideCy);
+        Matrix inv = new Matrix();
+        fwd.invert(inv);
+        MotionEvent local = MotionEvent.obtain(e);
+        try {
+            local.transform(inv);
+            return handleTouch(local);
+        } finally {
+            local.recycle();
+        }
+    }
+
+    private boolean handleTouch(MotionEvent e) {
         if (tracker == null) tracker = android.view.VelocityTracker.obtain();
         if (e.getActionMasked() == MotionEvent.ACTION_DOWN) tracker.clear();
         tracker.addMovement(e);
