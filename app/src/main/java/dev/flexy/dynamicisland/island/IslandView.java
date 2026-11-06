@@ -548,8 +548,6 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
         hiddenExtras.clear();
         if (minimizedItems != null) hiddenExtras.addAll(minimizedItems);
         setItems(sorted, hint);
-        // Shade open on a side notch: keep the cards expanded so media and messages sit in one row.
-        if (shadeFold && shadeInIsland && mode != Mode.EXPANDED && !items.isEmpty()) expand(stackItems());
     }
 
     public void setItems(List<IslandItem> sorted, int hint) {
@@ -676,25 +674,11 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
     private boolean statusBarFold;
     private boolean shadeHidden;
 
-    /** Landscape with a side notch: the open shade keeps the island visible, so media and messages show here. */
-    private boolean shadeInIsland;
-
-    public void setShadeInIsland(boolean on) {
-        if (shadeInIsland == on) return;
-        shadeInIsland = on;
-        setFold(shadeFold, statusBarFold);
-    }
-
     private void setFold(boolean shadeOpen, boolean statusBarHidden) {
         boolean was = shadeHidden;
-        boolean wasShadeOpen = shadeFold;
         shadeFold = shadeOpen;
         statusBarFold = statusBarHidden;
-        shadeHidden = (shadeOpen && !shadeInIsland) || statusBarHidden || sleepFold;
-        if (shadeInIsland) {
-            if (shadeOpen && !wasShadeOpen && mode != Mode.EXPANDED && !items.isEmpty()) expand(stackItems());
-            if (!shadeOpen && wasShadeOpen && mode == Mode.EXPANDED) collapse();
-        }
+        shadeHidden = shadeOpen || statusBarHidden || sleepFold;
         if (shadeHidden == was) return;
         dev.flexy.dynamicisland.xposed.XLog.i("island fold " + shadeHidden + " (shade " + shadeOpen + " " + shade
                 + " panel " + panelState + " heads-up " + headsUpShown() + ", status bar hidden " + statusBarHidden
@@ -975,6 +959,8 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
 
     private void expand(List<IslandItem> show) {
         if (show.isEmpty()) return;
+        // Landscape with a side notch: expansion is under investigation, so the island stays compact.
+        if (sideRot && !IslandSettings.expandLandscape()) return;
         boolean wasExpanded = mode == Mode.EXPANDED;
         long merge = !wasExpanded && split.value() > 0.05f ? MERGE_MS : 0;
         mode = Mode.EXPANDED;

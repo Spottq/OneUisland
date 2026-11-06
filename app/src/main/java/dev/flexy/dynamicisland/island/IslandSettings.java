@@ -37,6 +37,18 @@ final class IslandSettings {
         return values.getBoolean(Settings.LANDSCAPE_NOTCH, Settings.DEF_LANDSCAPE_NOTCH);
     }
 
+    static boolean alertAirplane() {
+        return values.getBoolean(Settings.ALERT_AIRPLANE, Settings.DEF_ALERT_AIRPLANE);
+    }
+
+    static boolean alertWifi() {
+        return values.getBoolean(Settings.ALERT_WIFI, Settings.DEF_ALERT_WIFI);
+    }
+
+    static boolean expandLandscape() {
+        return values.getBoolean(Settings.EXPAND_LANDSCAPE, Settings.DEF_EXPAND_LANDSCAPE);
+    }
+
     static boolean alertBattery() {
         return values.getBoolean(Settings.ALERT_BATTERY, Settings.DEF_ALERT_BATTERY);
     }

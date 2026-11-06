@@ -31,6 +31,13 @@ public final class Settings {
 
     public static final String ALERT_BATTERY = "alert_battery";
     public static final boolean DEF_ALERT_BATTERY = true;
+    public static final String ALERT_AIRPLANE = "alert_airplane";
+    public static final boolean DEF_ALERT_AIRPLANE = true;
+    public static final String ALERT_WIFI = "alert_wifi";
+    public static final boolean DEF_ALERT_WIFI = true;
+    /** Under investigation: expanding the island in landscape. Off by default. */
+    public static final String EXPAND_LANDSCAPE = "expand_landscape";
+    public static final boolean DEF_EXPAND_LANDSCAPE = false;
 
     public static final boolean DEF_ALERT_PODS = true;
     public static final boolean DEF_PODS_EVERY_UNLOCK = true;

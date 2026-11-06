@@ -90,6 +90,8 @@ public final class SettingsActivity extends Activity {
         toggle(alerts, "Do Not Disturb", Settings.ALERT_DND, Settings.DEF_ALERT_DND);
         toggle(alerts, "Sound / Vibrate / Mute", Settings.ALERT_RINGER, Settings.DEF_ALERT_RINGER);
         toggle(alerts, "Low battery (20% and 10%)", Settings.ALERT_BATTERY, Settings.DEF_ALERT_BATTERY);
+        toggle(alerts, "Airplane mode", Settings.ALERT_AIRPLANE, Settings.DEF_ALERT_AIRPLANE);
+        toggle(alerts, "Wi-Fi on and off", Settings.ALERT_WIFI, Settings.DEF_ALERT_WIFI);
 
         gap(root);
         LinearLayout apps = group(root, "Notifications");
@@ -97,6 +99,13 @@ public final class SettingsActivity extends Activity {
         TextView messageNote = label("WhatsApp and Telegram island alerts only work with Do Not Disturb enabled while this bug is investigated.", 12, secondary, false);
         messageNote.setPadding(0, 0, 0, dp(8));
         apps.addView(messageNote);
+
+        gap(root);
+        LinearLayout landscape = group(root, "Landscape (under investigation)");
+        toggle(landscape, "Allow expanding the island in landscape", Settings.EXPAND_LANDSCAPE, Settings.DEF_EXPAND_LANDSCAPE);
+        TextView landscapeNote = label("Under investigation: in landscape with a side notch the island stays compact and does not expand. Alerts, WhatsApp and Telegram still show.", 12, secondary, false);
+        landscapeNote.setPadding(0, 0, 0, dp(8));
+        landscape.addView(landscapeNote);
         toggle(apps, "Chrome downloads", Settings.SHOW_DOWNLOADS, Settings.DEF_SHOW_DOWNLOADS);
 
         Button reset = new Button(this);
