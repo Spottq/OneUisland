@@ -133,6 +133,7 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
 
     private float cyPortrait = -1f;
     private float cyLandscape = -1f;
+    private Rect lastNotchLog;
     private final RectF tmp = new RectF();
     private final int[] loc = new int[2];
     private boolean refreshPosted;
@@ -551,8 +552,10 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
             if (top != null && top.left - b.left > anchor) limit = Math.min(limit, top.left - b.left - 7 * density);
         }
         if (landscapeNotchRect != null) {
-            anchor = landscapeNotchRect.left - b.left;
-            limit = landscapeNotchRect.right - b.left;
+            // Flush against the notch edge and grow toward the screen center, like iPhone in landscape.
+            // The pill may use the whole remaining width, so it never runs off the screen.
+            anchor = Math.max(0f, landscapeNotchRect.left - b.left);
+            limit = w - 12 * density;
             holeD = 0f;
         }
         if (fader != null) fader.setKeepDate(tablet && position == dev.flexy.dynamicisland.Settings.POS_LEFT);
@@ -586,7 +589,8 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
             }
         }
         Rect result = side != null ? side : fallback;
-        if (result != null) {
+        if (result != null && !result.equals(lastNotchLog)) {
+            lastNotchLog = new Rect(result);
             XLog.i("landscape notch " + result.left + "," + result.top + " "
                     + result.width() + "x" + result.height() + (side == null ? " fallback" : ""));
         }
