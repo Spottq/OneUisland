@@ -5,7 +5,7 @@ import android.content.Context;
 import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
-import android.graphics.LinearGradient;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RadialGradient;
@@ -133,7 +133,32 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
     private static final Object PILL_BLUR = new Object();
     private static final Object BUBBLE_BLUR = new Object();
 
+    /**
+     * Landscape with a side notch: the compact pill turns 90 degrees and sits vertically on the notch,
+     * like iPhone. Expanded cards are not rotated and keep the anchored layout.
+     */
+    private boolean sideRot;
+    private float sideDeg;
+    private float sideCx;
+    private float sideCy;
+
+    /** Pivot is the notch center in view coordinates. */
+    public void setSideRotation(boolean on, float degrees, float pivotX, float pivotY) {
+        if (sideRot == on && sideDeg == degrees && sideCx == pivotX && sideCy == pivotY) return;
+        sideRot = on;
+        sideDeg = degrees;
+        sideCx = pivotX;
+        sideCy = pivotY;
+        invalidate();
+        scheduleFrame();
+    }
+
+    private boolean rotatedNow() {
+        return sideRot && mode != Mode.EXPANDED;
+    }
+
     private float centerFor(float w) {
+        if (rotatedNow()) return sideCx;
         return Float.isNaN(anchorLeft) ? cx : anchorLeft + w / 2f;
     }
 
@@ -734,9 +759,28 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
         float w = mainIn != null && mode == Mode.COMPACT ? width.target() : Math.max(minPillW, dp(92));
         float mid = centerFor(w);
         out.set(mid - w / 2f, cy - pillH / 2f, mid + w / 2f, cy + pillH / 2f);
+        if (rotatedNow()) {
+            Matrix m = new Matrix();
+            m.setRotate(sideDeg, sideCx, sideCy);
+            m.mapRect(out);
+        }
     }
 
     public void getTouchRegion(Region out) {
+        if (!rotatedNow()) {
+            buildTouchRegion(out);
+            return;
+        }
+        Region flat = new Region();
+        buildTouchRegion(flat);
+        RectF box = new RectF(flat.getBounds());
+        Matrix m = new Matrix();
+        m.setRotate(sideDeg, sideCx, sideCy);
+        m.mapRect(box);
+        out.set(Math.round(box.left), Math.round(box.top), Math.round(box.right), Math.round(box.bottom));
+    }
+
+    private void buildTouchRegion(Region out) {
         out.setEmpty();
         float m = dp(4);
         if (mode == Mode.HIDDEN) {
@@ -1582,6 +1626,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
         long t = now();
         computeMain(mainRect);
         int save = canvas.save();
+        if (rotatedNow()) canvas.rotate(sideDeg, sideCx, sideCy);
         boolean layered = vis < 0.995f;
         if (layered) {
             canvas.saveLayerAlpha(0, 0, screenW, getHeight(), Math.round(255 * vis));
@@ -4863,6 +4908,21 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent e) {
+        if (!rotatedNow()) return handleTouch(e);
+        Matrix fwd = new Matrix();
+        fwd.setRotate(sideDeg, sideCx, sideCy);
+        Matrix inv = new Matrix();
+        fwd.invert(inv);
+        MotionEvent local = MotionEvent.obtain(e);
+        try {
+            local.transform(inv);
+            return handleTouch(local);
+        } finally {
+            local.recycle();
+        }
+    }
+
+    private boolean handleTouch(MotionEvent e) {
         if (tracker == null) tracker = android.view.VelocityTracker.obtain();
         if (e.getActionMasked() == MotionEvent.ACTION_DOWN) tracker.clear();
         tracker.addMovement(e);

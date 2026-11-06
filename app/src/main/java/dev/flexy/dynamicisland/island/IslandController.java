@@ -138,6 +138,8 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
     private Rect cachedLandscapeNotch;
     private int cachedNotchRotation = -1;
     private int notchRetries;
+    /** True while the compact island is turned to sit vertically on a side notch. */
+    private boolean sideRotActive;
     private final RectF tmp = new RectF();
     private final int[] loc = new int[2];
     private boolean refreshPosted;
@@ -576,6 +578,10 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
             limit = w - 12 * density;
             holeD = 0f;
         }
+        // Landscape with a side notch: turn the pill vertical on the notch, like iPhone.
+        sideRotActive = landscapeNotchRect != null;
+        float sideDeg = cx < w / 2f ? 90f : -90f;
+        view.setSideRotation(sideRotActive, sideDeg, cx, cy);
         if (fader != null) fader.setKeepDate(tablet && position == dev.flexy.dynamicisland.Settings.POS_LEFT);
         boolean glass = (position == dev.flexy.dynamicisland.Settings.POS_LEFT
                 || (tablet && position == dev.flexy.dynamicisland.Settings.POS_CENTER)) && IslandSettings.glassPill(tablet);
@@ -873,6 +879,8 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         if (window == null) return;
         int h = Math.max(neededHeight, Math.round(statusBarCenterY() + 55 * density));
         if (view != null && view.isExpanded()) h = Math.max(h, window.windowBounds().height());
+        // A vertical pill on a side notch is taller than the portrait window, so use the full height.
+        if (sideRotActive) h = Math.max(h, window.windowBounds().height());
         window.setWindowHeight(h);
     }
 
