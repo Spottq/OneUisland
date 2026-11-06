@@ -134,6 +134,10 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
     private float cyPortrait = -1f;
     private float cyLandscape = -1f;
     private Rect lastNotchLog;
+    /** Last landscape notch that was read, and the rotation it belongs to. */
+    private Rect cachedLandscapeNotch;
+    private int cachedNotchRotation = -1;
+    private int notchRetries;
     private final RectF tmp = new RectF();
     private final int[] loc = new int[2];
     private boolean refreshPosted;
@@ -533,7 +537,21 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         }
         if (position == dev.flexy.dynamicisland.Settings.POS_CAMERA && top != null) cx = top.exactCenterX() - b.left;
         if (landscape && IslandSettings.landscapeNotch()) {
+            // The window insets are sometimes empty during rotation. Reuse the notch read earlier
+            // for this same rotation instead of dropping the island to the center of the screen.
+            int rot = window.rotation();
             landscapeNotchRect = landscapeNotch(c, b);
+            if (landscapeNotchRect != null) {
+                cachedLandscapeNotch = new Rect(landscapeNotchRect);
+                cachedNotchRotation = rot;
+                notchRetries = 0;
+            } else if (cachedLandscapeNotch != null && cachedNotchRotation == rot) {
+                landscapeNotchRect = new Rect(cachedLandscapeNotch);
+            } else if (notchRetries < 10) {
+                // Nothing known yet for this rotation: check again shortly.
+                notchRetries++;
+                main.postDelayed(this::updateGeometry, 200);
+            }
             if (landscapeNotchRect != null) {
                 cx = landscapeNotchRect.exactCenterX() - b.left;
                 cy = landscapeNotchRect.exactCenterY() - b.top;
