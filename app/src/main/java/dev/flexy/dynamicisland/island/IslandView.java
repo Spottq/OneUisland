@@ -2335,7 +2335,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
             }
             if (item.idle) {
                 drawIdlePill(c, s, alpha);
-                postInvalidateDelayed(66L);
+                if (IslandSettings.rainbowIdle()) postInvalidateDelayed(66L);
                 return;
             }
             drawLeadingMono(c, item, s.left + padding, midY, lead, alpha);
@@ -2343,6 +2343,15 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
         }
 
         private void drawIdlePill(Canvas c, RectF s, float alpha) {
+            if (!IslandSettings.rainbowIdle()) {
+                strokePaint.setStyle(Paint.Style.STROKE);
+                strokePaint.setStrokeWidth(dp(1.5f));
+                strokePaint.setColor(Colors.withAlpha(item.accent, alpha * 0.22f));
+                tmpRect.set(s.left + dp(1.5f), s.top + dp(1.5f), s.right - dp(1.5f), s.bottom - dp(1.5f));
+                c.drawRoundRect(tmpRect, s.height() / 2f, s.height() / 2f, strokePaint);
+                strokePaint.setStyle(Paint.Style.FILL);
+                return;
+            }
             float phase = (SystemClock.uptimeMillis() % 1800L) / 1800f;
             if (idleGradientWidth != s.width() || idleGradientHeight != s.height()) {
                 tmpRect.set(s.left + dp(1.5f), s.top + dp(1.5f), s.right - dp(1.5f), s.bottom - dp(1.5f));

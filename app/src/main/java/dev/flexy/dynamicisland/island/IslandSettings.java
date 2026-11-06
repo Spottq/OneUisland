@@ -29,6 +29,14 @@ final class IslandSettings {
         return values.getBoolean(Settings.SHOW_FULLSCREEN, Settings.DEF_SHOW_FULLSCREEN);
     }
 
+    static boolean rainbowIdle() {
+        return values.getBoolean(Settings.RAINBOW_IDLE, Settings.DEF_RAINBOW_IDLE);
+    }
+
+    static boolean landscapeNotch() {
+        return values.getBoolean(Settings.LANDSCAPE_NOTCH, Settings.DEF_LANDSCAPE_NOTCH);
+    }
+
     static boolean alertBattery() {
         return values.getBoolean(Settings.ALERT_BATTERY, Settings.DEF_ALERT_BATTERY);
     }

@@ -71,6 +71,8 @@ public final class SettingsActivity extends Activity {
         slider(island, "Island length", Settings.MAX_CHARS, Settings.MIN_MAX_CHARS, Settings.NO_MAX_CHARS,
                 Settings.DEF_MAX_CHARS, v -> v >= Settings.NO_MAX_CHARS ? "No limit" : v + " chars", Settings.PREVIEW_LENGTH);
         toggle(island, "Show in fullscreen", Settings.SHOW_FULLSCREEN, Settings.DEF_SHOW_FULLSCREEN);
+        toggle(island, "Rainbow idle animation", Settings.RAINBOW_IDLE, Settings.DEF_RAINBOW_IDLE);
+        toggle(island, "Use notch position in landscape", Settings.LANDSCAPE_NOTCH, Settings.DEF_LANDSCAPE_NOTCH);
         link(island, "Island position", this::positionSummary, () ->
                 startActivity(new Intent(this, SettingsActivity.class).putExtra(EXTRA_SCREEN, SCREEN_POSITION)));
         toggle(island, "Detailed second capsule", Settings.DETAILED_BUBBLE, Settings.DEF_DETAILED_BUBBLE);

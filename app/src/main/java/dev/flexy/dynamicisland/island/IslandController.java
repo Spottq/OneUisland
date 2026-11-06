@@ -518,6 +518,7 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         if (w <= 0 || h <= 0) return;
         boolean tablet = Math.min(w, h) / density >= 600f;
         int position = IslandSettings.position(tablet);
+        boolean landscape = w > h;
         float cx = w / 2f;
         float cy = statusBarCenterY();
         float holeD = 0f;
@@ -529,6 +530,14 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
             if (top != null) cy = Math.max(cy, top.exactCenterY() - b.top);
         }
         if (position == dev.flexy.dynamicisland.Settings.POS_CAMERA && top != null) cx = top.exactCenterX() - b.left;
+        if (landscape && IslandSettings.landscapeNotch()) {
+            Rect notch = landscapeNotch(c, b);
+            if (notch != null) {
+                cx = notch.exactCenterX() - b.left;
+                cy = notch.exactCenterY() - b.top;
+                top = notch;
+            }
+        }
         if (top != null && Math.abs(top.exactCenterX() - b.left - cx) < 10 * density) {
             holeD = Math.min(top.width(), top.height()) * 0.78f;
         }
@@ -543,13 +552,23 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
         if (fader != null) fader.setKeepDate(tablet && position == dev.flexy.dynamicisland.Settings.POS_LEFT);
         boolean glass = (position == dev.flexy.dynamicisland.Settings.POS_LEFT
                 || (tablet && position == dev.flexy.dynamicisland.Settings.POS_CENTER)) && IslandSettings.glassPill(tablet);
-        boolean landscape = w > h;
         if (landscape) cyLandscape = cy;
         else cyPortrait = cy;
         view.setGeometry(w, cx, cy, holeD, tablet, anchor, glass, limit);
         applyWindowHeight();
         updateSuppression();
         pushExitTargets(false);
+    }
+
+    private Rect landscapeNotch(DisplayCutout cutout, Rect bounds) {
+        if (cutout == null) return null;
+        Rect best = null;
+        for (Rect rect : cutout.getBoundingRects()) {
+            if (rect == null || rect.isEmpty()) continue;
+            boolean edge = rect.left <= bounds.left + 2 || rect.right >= bounds.right - 2;
+            if (!edge || best == null || rect.height() > best.height()) best = edge ? rect : best;
+        }
+        return best;
     }
 
     private Rect hiddenCameraHole(Rect bounds) {

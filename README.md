@@ -38,6 +38,8 @@ Open the module settings from LSPosed:
 
 - Island length (in characters).
 - Show in fullscreen (videos, games and immersive apps; disabled by default).
+- Rainbow idle animation (optional; disabled by default to reduce power use).
+- Use notch position in landscape (optional; disabled by default and depends on Samsung exposing the display cutout).
 - Detailed second capsule.
 - Cards: frosted glass design, recent Spotify playlists.
 - Alert toggles: headphone battery (every unlock or only on connect), Do Not Disturb, sound mode, low battery.

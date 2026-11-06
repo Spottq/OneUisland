@@ -14,6 +14,10 @@ public final class Settings {
     public static final String PREVIEW_LENGTH = "preview_length";
     public static final String SHOW_FULLSCREEN = "show_fullscreen";
     public static final boolean DEF_SHOW_FULLSCREEN = false;
+    public static final String RAINBOW_IDLE = "rainbow_idle";
+    public static final boolean DEF_RAINBOW_IDLE = false;
+    public static final String LANDSCAPE_NOTCH = "landscape_notch";
+    public static final boolean DEF_LANDSCAPE_NOTCH = false;
 
     public static final String ALERT_PODS = "alert_pods";
     public static final String PODS_EVERY_UNLOCK = "pods_every_unlock";
