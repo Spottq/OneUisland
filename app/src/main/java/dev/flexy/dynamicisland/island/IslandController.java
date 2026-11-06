@@ -562,13 +562,29 @@ public final class IslandController implements IslandView.Host, IslandWindow.Lis
 
     private Rect landscapeNotch(DisplayCutout cutout, Rect bounds) {
         if (cutout == null) return null;
-        Rect best = null;
+        Rect side = null;
+        Rect fallback = null;
+        int sideArea = -1;
+        int fallbackArea = -1;
         for (Rect rect : cutout.getBoundingRects()) {
             if (rect == null || rect.isEmpty()) continue;
+            int area = rect.width() * rect.height();
+            if (area > fallbackArea) {
+                fallback = new Rect(rect);
+                fallbackArea = area;
+            }
             boolean edge = rect.left <= bounds.left + 2 || rect.right >= bounds.right - 2;
-            if (!edge || best == null || rect.height() > best.height()) best = edge ? rect : best;
+            if (edge && area > sideArea) {
+                side = new Rect(rect);
+                sideArea = area;
+            }
         }
-        return best;
+        Rect result = side != null ? side : fallback;
+        if (result != null) {
+            XLog.i("landscape notch " + result.left + "," + result.top + " "
+                    + result.width() + "x" + result.height() + (side == null ? " fallback" : ""));
+        }
+        return result;
     }
 
     private Rect hiddenCameraHole(Rect bounds) {
