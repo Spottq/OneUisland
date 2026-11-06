@@ -48,6 +48,9 @@ final class ShadeMediaPlayer {
                     entry.getValue().updateBackground(root, item != null);
                     if (item == null) continue;
                     int width = View.MeasureSpec.getSize((Integer) p.args[0]);
+                    boolean land = landscape(layout);
+                    logShadeTree(layout, land);
+                    entry.getValue().renderer.setShadeLandscape(land);
                     int height = (int) Math.ceil(entry.getValue().renderer.shadeCardHeight(item, width));
                     measure.apply(height);
                     break;
@@ -77,6 +80,7 @@ final class ShadeMediaPlayer {
                                 IslandItem item = b.item(v);
                                 if (item == null) return;
                                 int w = View.MeasureSpec.getSize((Integer) q.args[0]);
+                                b.renderer.setShadeLandscape(landscape(v));
                                 int h = (int) Math.ceil(b.renderer.shadeCardHeight(item, w));
                                 q.args[1] = View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY);
                             }));
@@ -87,6 +91,30 @@ final class ShadeMediaPlayer {
                     view.invalidate();
                     view.requestLayout();
                 }));
+    }
+
+    /** True when the shade is on a landscape screen, so media cards use the compact row. */
+    private static boolean landscape(View v) {
+        return v.getResources().getConfiguration().orientation
+                == android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+    }
+
+    private static int treeLoggedState = -1;
+
+    /** Diagnostic: logs the parent chain of the shade content once per orientation. */
+    private static void logShadeTree(View from, boolean land) {
+        int state = land ? 1 : 0;
+        if (treeLoggedState == state) return;
+        treeLoggedState = state;
+        StringBuilder sb = new StringBuilder("shade tree landscape=" + land);
+        android.view.ViewParent p = from;
+        for (int i = 0; i < 8 && p instanceof View; i++) {
+            View pv = (View) p;
+            sb.append(" | ").append(pv.getClass().getSimpleName())
+                    .append(' ').append(pv.getWidth()).append('x').append(pv.getHeight());
+            p = pv.getParent();
+        }
+        XLog.i(sb.toString());
     }
 
     static boolean activeRow(Object row) {
@@ -251,6 +279,7 @@ final class ShadeMediaPlayer {
         }
 
         void draw(View view, Canvas canvas, IslandItem item) {
+            renderer.setShadeLandscape(landscape(view));
             float height = renderer.shadeCardHeight(item, view.getWidth());
             scale = Math.min(1f, view.getHeight() / Math.max(1f, height));
             if (scale <= 0) return;

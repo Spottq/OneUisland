@@ -2641,7 +2641,7 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
     }
 
     private CardBody makeBody(IslandItem it, float w, boolean shadeCard) {
-        if (it.isMedia) return new MediaBody(it, w);
+        if (it.isMedia) return new MediaBody(it, w, shadeCard && shadeLandscape);
         if (it.claude) return new ClaudeBody(it, w);
         if (it.torch) return new TorchBody(it, w);
         if (it.alert) return new AlertBody(it, w);
@@ -2659,6 +2659,15 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
                 || (it.trailing == IslandItem.Trailing.CHRONOMETER && it.progress < 0);
         if (timerLike) return new TimerBody(it, w);
         return new LiveBody(it, w);
+    }
+
+    private boolean shadeLandscape;
+
+    /** Shade cards: lay the media player out as one compact row when the screen is landscape. */
+    public void setShadeLandscape(boolean on) {
+        if (shadeLandscape == on) return;
+        shadeLandscape = on;
+        shadeBody = null;
     }
 
     private CardBody shadeBody(IslandItem item, float width) {
@@ -4303,26 +4312,38 @@ public final class IslandView extends View implements Choreographer.FrameCallbac
             return clamp01((lx - barLeft) / Math.max(1f, barRight - barLeft));
         }
 
-        MediaBody(IslandItem item, float w) {
+        MediaBody(IslandItem item, float w, boolean compact) {
             super(item, w);
             glowPaint.setMaskFilter(new BlurMaskFilter(dp(5), BlurMaskFilter.Blur.NORMAL));
-            int textW = Math.max(1, Math.round(w - pad * 2 - art - dp(14) - tile - dp(10)));
+            // Compact: art and text on the left, controls on the right, seek bar underneath.
+            int textW = Math.max(1, Math.round(compact
+                    ? w * 0.55f - pad - art - dp(24)
+                    : w - pad * 2 - art - dp(14) - tile - dp(10)));
             title = item.title == null ? null : layout(item.title, mediaTitlePaint(), textW, 1);
             artist = item.subtitle == null ? null : layout(item.subtitle, mediaArtistPaint(), textW, 1);
-            seekTop = pad + art + dp(16);
-            controlsTop = seekTop + dp(14) + dp(10);
+            seekTop = compact ? pad + art + dp(10) : pad + art + dp(16);
+            controlsTop = compact ? pad + (art - controlH) / 2f : seekTop + dp(14) + dp(10);
             String totalText = item.mediaDuration > 0 ? formatTimePadded(item.mediaDuration) : "--:--";
             barLeft = pad + smallPaint.measureText("00:00") + dp(10);
             barRight = w - pad - smallPaint.measureText(totalText) - dp(10);
             float span = w - pad * 2;
-            if (item.mediaCustom.size() > 0) addCustom(item.mediaCustom.get(0), pad + span * 0.08f);
-            addControl(Glyphs.PREV, pad + span * 0.30f, item.mediaPrev, false);
-            addControl(item.playing ? Glyphs.PAUSE : Glyphs.PLAY, pad + span * 0.5f, item.mediaPlayPause, true);
-            addControl(Glyphs.NEXT, pad + span * 0.70f, item.mediaNext, false);
-            if (item.mediaCustom.size() > 1) addCustom(item.mediaCustom.get(1), pad + span * 0.92f);
-            h = controlsTop + controlH + dp(14);
+            if (compact) {
+                float left = w * 0.55f;
+                float cs = w - pad - tile - dp(16) - left;
+                addControl(Glyphs.PREV, left + cs * 0.2f, item.mediaPrev, false);
+                addControl(item.playing ? Glyphs.PAUSE : Glyphs.PLAY, left + cs * 0.5f, item.mediaPlayPause, true);
+                addControl(Glyphs.NEXT, left + cs * 0.8f, item.mediaNext, false);
+                h = seekTop + dp(26);
+            } else {
+                if (item.mediaCustom.size() > 0) addCustom(item.mediaCustom.get(0), pad + span * 0.08f);
+                addControl(Glyphs.PREV, pad + span * 0.30f, item.mediaPrev, false);
+                addControl(item.playing ? Glyphs.PAUSE : Glyphs.PLAY, pad + span * 0.5f, item.mediaPlayPause, true);
+                addControl(Glyphs.NEXT, pad + span * 0.70f, item.mediaNext, false);
+                if (item.mediaCustom.size() > 1) addCustom(item.mediaCustom.get(1), pad + span * 0.92f);
+                h = controlsTop + controlH + dp(14);
+            }
             playerH = h;
-            int n = Math.min(4, item.mediaShortcuts.size());
+            int n = compact ? 0 : Math.min(4, item.mediaShortcuts.size());
             if (n > 0) {
                 float gap = dp(10);
                 float side = (span - gap * 3) / 4f;
